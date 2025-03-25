@@ -2,7 +2,7 @@ name: YouTube Trending Tracker
 
 on:
   schedule:
-    - cron: '0 0 * * *'  # Runs daily at midnight UTC
+    - cron: '0 * * * *'  # Runs every hour
   push:
     branches:
       - main  # Runs on push to main branch
