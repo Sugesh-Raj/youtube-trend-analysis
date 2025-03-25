@@ -2,25 +2,32 @@ import os
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+from fetch_trending import fetch_trending_videos  # Import from fetch_trending.py
 
 CSV_FILE = "trending_videos.csv"
 
 def load_data():
     """Load and preprocess the trending video data."""
     if not os.path.exists(CSV_FILE):
-        print(f"❌ Error: {CSV_FILE} not found. Run `fetch_trending.py` first.")
-        return None
+        print(f"❌ {CSV_FILE} not found. Fetching data...")
+        fetch_trending_videos()  # Automatically fetch data if file is missing
     
     df = pd.read_csv(CSV_FILE)
-    
+
+    # Ensure required columns exist
+    required_columns = {"Trending_Date", "Upload_Date", "Genre", "Region", "Video_ID", "Engagement_Rate"}
+    if not required_columns.issubset(df.columns):
+        print("❌ Missing required columns in CSV. Check data source.")
+        return None
+
     # Convert dates
     df["Trending_Date"] = pd.to_datetime(df["Trending_Date"], errors="coerce")
     df["Upload_Date"] = pd.to_datetime(df["Upload_Date"], errors="coerce")
-    
+
     # Compute time taken to trend
     df["Time_To_Trend"] = (df["Trending_Date"] - df["Upload_Date"]).dt.days
-    df.dropna(subset=["Time_To_Trend"], inplace=True)  # Remove invalid dates
-    
+    df.dropna(subset=["Time_To_Trend"], inplace=True)
+
     return df
 
 def analyze_trending_duration_by_genre(df):
