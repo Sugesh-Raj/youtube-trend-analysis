@@ -4,7 +4,7 @@ import pandas as pd
 from datetime import datetime
 
 # YouTube API Key (Use environment variable for security)
-API_KEY = os.getenv("YOUTUBE_API_KEY")
+API_KEY = os.getenv("AIzaSyCbE9LwgnK_lGlMTpQpItxi58WCkhfwit4")
 REGION = "IN"
 MAX_RESULTS = 50
 ARTIFACTS_FOLDER = "artifacts"
