@@ -11,7 +11,7 @@ nltk.download("stopwords")
 from nltk.corpus import stopwords
 
 # Set API Key and Region
-API_KEY = os.getenv("YOUTUBE_API_KEY")  # Use environment variable
+API_KEY = "AIzaSyCbE9LwgnK_lGlMTpQpItxi58WCkhfwit4"  # Use environment variable
 REGION = "IN"  # India
 MAX_RESULTS = 50
 
