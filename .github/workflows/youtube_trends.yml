@@ -5,8 +5,8 @@ on:
     - cron: '0 * * * *'  # Runs every hour
   push:
     branches:
-      - main  # Runs on push to main branch
-  workflow_dispatch:  # Allows manual trigger
+      - main
+  workflow_dispatch:
 
 jobs:
   fetch_trending:
@@ -21,7 +21,16 @@ jobs:
           python-version: '3.8'
 
       - name: Install dependencies
-        run: pip install pandas requests matplotlib seaborn
+        run: pip install pandas requests
 
       - name: Run fetch_trending.py
         run: python fetch_trending.py
+
+      - name: List Files (Debugging)
+        run: ls -lah
+
+      - name: Upload Trending Data
+        uses: actions/upload-artifact@v3
+        with:
+          name: trending_data
+          path: ./trending_videos.csv
