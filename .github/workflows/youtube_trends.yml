@@ -1,54 +1,36 @@
-name: YouTube Trending Analysis
+name: YouTube Trending Tracker
 
 on:
-  push:
-    branches:
-      - main
   schedule:
-    - cron: "0 * * * *"  # Runs daily at midnight UTC
+    - cron: '0 * * * *' 
+  workflow_dispatch:  # Allows manual execution
+
+permissions:
+  contents: write
+  actions: read
 
 jobs:
-  fetch_trending:
+  fetch-trending-data:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout Repository
+      - name: Checkout Repo
         uses: actions/checkout@v3
 
       - name: Set Up Python
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v4
         with:
-          python-version: "3.9"
+          python-version: '3.9'
 
       - name: Install Dependencies
         run: pip install pandas requests matplotlib seaborn
 
-      - name: Fetch Trending Videos
+      - name: Run Data Fetching Script
         run: python fetch_trending.py
 
-      - name: Commit Trending Data
+      - name: Commit and Push Changes
         run: |
           git config --global user.name "github-actions"
-          git config --global user.email "github-actions@github.com"
+          git config --global user.email "actions@github.com"
           git add trending_videos.csv
-          git commit -m "Update trending videos data"
-          git push
-
-  analyze_trends:
-    needs: fetch_trending
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v3
-
-      - name: Set Up Python
-        uses: actions/setup-python@v3
-        with:
-          python-version: "3.9"
-
-      - name: Install Dependencies
-        run: pip install pandas matplotlib seaborn
-
-      - name: Analyze Trends
-        run: python analyze_trends.py
+          git commit -m "Updated trending video data"
+          git push origin main
