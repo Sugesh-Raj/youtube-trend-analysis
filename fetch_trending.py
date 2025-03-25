@@ -1,16 +1,22 @@
 import os
 import requests
 import pandas as pd
+import nltk
+from collections import Counter
 from datetime import datetime
+import re
 
-# YouTube API Key (Use environment variable for security)
-API_KEY = "AIzaSyCbE9LwgnK_lGlMTpQpItxi58WCkhfwit4"  # Make sure to set this in GitHub Secrets or locally
-REGION = "IN"
+# Download stopwords (needed only once)
+nltk.download("stopwords")
+from nltk.corpus import stopwords
+
+# Set API Key and Region
+API_KEY = os.getenv("YOUTUBE_API_KEY")  # Use environment variable
+REGION = "IN"  # India
 MAX_RESULTS = 50
-CSV_FILE = "trending_videos.csv"  # Save CSV directly in the project directory
 
-# Category ID to Genre Mapping (for India "IN")
-CATEGORY_MAP = {
+# Category mapping (YouTube API category IDs)
+CATEGORY_MAPPING = {
     "1": "Film & Animation",
     "2": "Autos & Vehicles",
     "10": "Music",
@@ -19,15 +25,13 @@ CATEGORY_MAP = {
     "18": "Short Movies",
     "19": "Travel & Events",
     "20": "Gaming",
-    "21": "Videoblogging",
     "22": "People & Blogs",
     "23": "Comedy",
     "24": "Entertainment",
     "25": "News & Politics",
-    "26": "Howto & Style",
+    "26": "How-to & Style",
     "27": "Education",
     "28": "Science & Technology",
-    "29": "Nonprofits & Activism",
     "30": "Movies",
     "31": "Anime/Animation",
     "32": "Action/Adventure",
@@ -46,45 +50,80 @@ CATEGORY_MAP = {
 }
 
 def fetch_trending_videos():
-    """Fetch trending YouTube videos and return as a list."""
     url = f"https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics&chart=mostPopular&regionCode={REGION}&maxResults={MAX_RESULTS}&key={API_KEY}"
-    response = requests.get(url).json()
-
-    # Check if API response is valid
-    if "items" not in response:
-        print("❌ Error fetching data:", response)
+    response = requests.get(url)
+    
+    if response.status_code != 200:
+        print("Error fetching data:", response.json())
         return []
 
+    data = response.json()
     videos = []
-    for idx, video in enumerate(response["items"], start=1):
+
+    for video in data.get("items", []):
+        title = video["snippet"]["title"]
+        description = video["snippet"]["description"]
+        tags = video["snippet"].get("tags", [])
+        published_at = video["snippet"]["publishedAt"]
         category_id = video["snippet"].get("categoryId", "Unknown")
-        genre = CATEGORY_MAP.get(category_id, "Unknown")
+        category_name = CATEGORY_MAPPING.get(category_id, "Unknown")
+
+        views = int(video["statistics"].get("viewCount", 0))
+        likes = int(video["statistics"].get("likeCount", 0))
+        comments = int(video["statistics"].get("commentCount", 0))
+
+        # Calculate engagement rate (likes/comments)
+        engagement_rate = round(likes / comments if comments > 0 else 0, 2)
+
+        # Combine title, description, and tags for keyword extraction
+        text = f"{title} {description} {' '.join(tags)}"
+        keywords = extract_keywords(text)
 
         videos.append({
-            "Trending_Date": datetime.now().strftime("%Y-%m-%d"),
-            "Rank": idx,
-            "Video_ID": video["id"],
-            "Title": video["snippet"]["title"],
-            "Views": int(video["statistics"].get("viewCount", 0)),
-            "Likes": int(video["statistics"].get("likeCount", 0)),
-            "Comments": int(video["statistics"].get("commentCount", 0)),
-            "Genre": genre,  # Replaced category ID with actual genre
-            "Region": REGION,
-            "Upload_Date": video["snippet"]["publishedAt"][:10],
-            "Engagement_Rate": int(video["statistics"].get("likeCount", 0)) / (int(video["statistics"].get("commentCount", 0)) + 1)  # Avoid division by zero
+            "Video ID": video["id"],
+            "Title": title,
+            "Description": description,
+            "Tags": ", ".join(tags) if tags else "None",
+            "Extracted Keywords": keywords,
+            "Views": views,
+            "Likes": likes,
+            "Comments": comments,
+            "Engagement Rate": engagement_rate,
+            "Published Date": published_at,
+            "Trending Date": datetime.now().strftime("%Y-%m-%d"),
+            "Genre": category_name
         })
+
     return videos
 
-def save_data():
-    """Fetch data and save to CSV file."""
-    videos = fetch_trending_videos()
-    if not videos:
-        print("❌ No data to save. Exiting...")
-        return
+def extract_keywords(text):
+    # Clean and preprocess text
+    text = text.lower()
+    text = re.sub(r'[^\w\s]', '', text)  # Remove punctuation
+    words = text.split()
 
+    # Remove stopwords
+    stop_words = set(stopwords.words("english"))
+    filtered_words = [word for word in words if word not in stop_words]
+
+    # Get top 10 keywords
+    word_counts = Counter(filtered_words)
+    top_keywords = [word for word, count in word_counts.most_common(10)]
+    return ", ".join(top_keywords)
+
+def save_to_csv(videos):
+    filename = "youtube_trending_data.csv"
+    
+    # Convert to DataFrame
     df = pd.DataFrame(videos)
-    df.to_csv(CSV_FILE, index=False)
-    print(f"✅ Trending videos data saved at {CSV_FILE}")
 
-if __name__ == "__main__":
-    save_data()
+    # Save to CSV (append mode)
+    df.to_csv(filename, mode="a", index=False, header=not os.path.exists(filename))
+    print("Data collected and saved to", filename)
+
+# Run script
+videos = fetch_trending_videos()
+if videos:
+    save_to_csv(videos)
+else:
+    print("No data collected. Check API key or region settings.")
