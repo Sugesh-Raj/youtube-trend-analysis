@@ -1,65 +1,54 @@
-name: YouTube Trending Tracker
+name: YouTube Trending Analysis
 
 on:
   push:
     branches:
       - main
   schedule:
-    - cron: '0 * * * *'  # Runs every hour
+    - cron: "0 * * * *"  # Runs daily at midnight UTC
 
 jobs:
   fetch_trending:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout Repository
         uses: actions/checkout@v3
 
-      - name: Set up Python
+      - name: Set Up Python
         uses: actions/setup-python@v3
         with:
-          python-version: '3.9'
+          python-version: "3.9"
 
-      - name: Install dependencies
-        run: pip install pandas requests
+      - name: Install Dependencies
+        run: pip install pandas requests matplotlib seaborn
 
-      - name: Run fetch_trending.py
+      - name: Fetch Trending Videos
         run: python fetch_trending.py
-        env:
-          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
 
-      - name: Upload trending videos as artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: trending-data
-          path: trending_videos.csv
+      - name: Commit Trending Data
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          git add trending_videos.csv
+          git commit -m "Update trending videos data"
+          git push
 
   analyze_trends:
-    runs-on: ubuntu-latest
     needs: fetch_trending
+    runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout Repository
         uses: actions/checkout@v3
 
-      - name: Set up Python
+      - name: Set Up Python
         uses: actions/setup-python@v3
         with:
-          python-version: '3.9'
+          python-version: "3.9"
 
-      - name: Install dependencies
-        run: pip install pandas
+      - name: Install Dependencies
+        run: pip install pandas matplotlib seaborn
 
-      - name: Download trending data
-        uses: actions/download-artifact@v3
-        with:
-          name: trending-data
-
-      - name: Run analyze_trends.py
+      - name: Analyze Trends
         run: python analyze_trends.py
-
-      - name: Upload analysis results
-        uses: actions/upload-artifact@v3
-        with:
-          name: trending-analysis
-          path: trending_analysis.csv
