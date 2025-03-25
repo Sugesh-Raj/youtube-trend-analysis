@@ -2,35 +2,39 @@ name: YouTube Trending Tracker
 
 on:
   schedule:
-    - cron: '0 * * * *'  # Runs every hour
-  push:
-    branches:
-      - main
-  workflow_dispatch:
+    - cron: "0 * * * *"  # Runs every 1 hours
+  workflow_dispatch:  # Allows manual execution
 
 jobs:
-  fetch_trending:
+  collect_and_analyze:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout code
+      - name: 📥 Checkout Repository
         uses: actions/checkout@v3
 
-      - name: Set up Python
+      - name: 🔧 Set Up Python
         uses: actions/setup-python@v3
         with:
-          python-version: '3.8'
+          python-version: "3.9"
 
-      - name: Install dependencies
+      - name: 📦 Install Dependencies
         run: pip install pandas requests
 
-      - name: Run fetch_trending.py
+      - name: 🔄 Fetch Trending Videos
         run: python fetch_trending.py
 
-      - name: List Files (Debugging)
-        run: ls -lah
+      - name: 📊 Analyze Trends
+        run: python analyze_trends.py
 
-      - name: Upload Trending Data
+      - name: 📂 Upload Trending Data (Artifact)
         uses: actions/upload-artifact@v3
         with:
-          name: trending_data
-          path: ./trending_videos.csv
+          name: trending-data
+          path: artifacts/trending_videos.csv
+
+      - name: 📂 Upload Trend Analysis (Artifact)
+        uses: actions/upload-artifact@v3
+        with:
+          name: trend-analysis
+          path: artifacts/trend_analysis.txt
