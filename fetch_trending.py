@@ -4,7 +4,7 @@ import pandas as pd
 from datetime import datetime
 
 # Get API key from environment variable
-API_KEY = os.getenv("YOUTUBE_API_KEY")  # Use a proper environment variable name
+API_KEY = os.getenv("AIzaSyCbE9LwgnK_lGlMTpQpItxi58WCkhfwit4")  # Use a proper environment variable name
 if not API_KEY:
     raise ValueError("⚠️ API Key not found! Set the 'YOUTUBE_API_KEY' environment variable.")
 
