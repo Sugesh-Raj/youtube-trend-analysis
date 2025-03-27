@@ -5,24 +5,48 @@ from datetime import datetime
 
 # YouTube API Key (Replace with your actual key)
 API_KEY = "AIzaSyCbE9LwgnK_lGlMTpQpItxi58WCkhfwit4"
-REGION = "IN"  # Fetching videos from India
+REGION = "IN"
 MAX_RESULTS = 15
 CSV_FILE = "trending_videos.csv"
 
+# Category ID to Genre Mapping
+CATEGORY_MAPPING = {
+    "1": "Film & Animation",
+    "2": "Autos & Vehicles",
+    "10": "Music",
+    "15": "Pets & Animals",
+    "17": "Sports",
+    "18": "Short Movies",
+    "19": "Travel & Events",
+    "20": "Gaming",
+    "22": "People & Blogs",
+    "23": "Comedy",
+    "24": "Entertainment",
+    "25": "News & Politics",
+    "26": "How-to & Style",
+    "27": "Education",
+    "28": "Science & Technology",
+    "29": "Nonprofits & Activism"
+}
+
 def get_channel_location(channel_id):
-    """Fetch country & state information of the video uploader"""
+    """Fetch country and state (if available) of a channel."""
     url = f"https://www.googleapis.com/youtube/v3/channels?part=snippet&id={channel_id}&key={API_KEY}"
     response = requests.get(url).json()
     
-    try:
-        country = response["items"][0]["snippet"].get("country", "Unknown")
-        title = response["items"][0]["snippet"].get("title", "")
-        
-        # If the title contains a city or state name, extract it
-        state = title.split("|")[-1].strip() if "|" in title else "Unknown"
-        return country, state
-    except (KeyError, IndexError):
-        return "Unknown", "Unknown"
+    country = "Unknown"
+    state = "Unknown"
+
+    if "items" in response and len(response["items"]) > 0:
+        snippet = response["items"][0]["snippet"]
+        country = snippet.get("country", "Unknown")
+
+        # Extract state if mentioned in the location
+        location = snippet.get("customUrl", "")
+        if "," in location:
+            state = location.split(",")[-1].strip()
+    
+    return country, state
 
 def fetch_trending_videos():
     """Fetch trending YouTube videos and return as a list with additional data."""
@@ -42,7 +66,11 @@ def fetch_trending_videos():
         likes = int(stats.get("likeCount", 0))
         comments = int(stats.get("commentCount", 0))
 
-        # Engagement Rate Formula: (Likes + Comments) / Views
+        # Get Category ID and map it to Genre Name
+        category_id = snippet["categoryId"]
+        genre = CATEGORY_MAPPING.get(category_id, "Unknown")
+
+        # Engagement Rate Formula
         engagement_rate = round((likes + comments) / views, 4) if views > 0 else 0
 
         videos.append({
@@ -53,28 +81,3 @@ def fetch_trending_videos():
             "Views": views,
             "Likes": likes,
             "Comments": comments,
-            "Engagement_Rate": engagement_rate,
-            "Genre": snippet["categoryId"],  # Placeholder (categoryId needs mapping)
-            "Country": country,
-            "State": state
-        })
-
-    return videos
-
-def save_data():
-    """Fetch data and append to CSV file."""
-    videos = fetch_trending_videos()
-    df = pd.DataFrame(videos)
-
-    # Append data if file exists, otherwise create a new file
-    if os.path.exists(CSV_FILE):
-        df.to_csv(CSV_FILE, mode='a', index=False, header=False)
-    else:
-        df.to_csv(CSV_FILE, index=False)
-
-    print("Trending videos data saved!")
-
-if __name__ == "__main__":
-    save_data()
-
-
