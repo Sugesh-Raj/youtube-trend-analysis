@@ -2,7 +2,7 @@ name: YouTube Trending Tracker
 
 on:
   schedule:
-    - cron: '0 * * * *' 
+    - cron: '0 * * * *'  # Runs every hour
   workflow_dispatch:  # Allows manual execution
 
 permissions:
@@ -10,10 +10,10 @@ permissions:
   actions: read
 
 jobs:
-  fetch-trending-data:
+  fetch-trending:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Repo
+      - name: Checkout Repository
         uses: actions/checkout@v3
 
       - name: Set Up Python
