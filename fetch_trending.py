@@ -1,8 +1,8 @@
 import requests
 import pandas as pd
 import os
-from datetime import datetime, timedelta
-import isodate  # For parsing video duration
+import isodate  # Ensure this module is installed
+from datetime import datetime
 
 # YouTube API Key (Replace with your actual key)
 API_KEY = "AIzaSyCbE9LwgnK_lGlMTpQpItxi58WCkhfwit4"
@@ -25,44 +25,21 @@ def get_channel_location(channel_id):
     except (KeyError, IndexError):
         return "Unknown", "Unknown"
 
-def get_video_details(video_id):
-    """Fetch video length (duration) and category"""
-    url = f"https://www.googleapis.com/youtube/v3/videos?part=contentDetails,snippet&id={video_id}&key={API_KEY}"
+def get_video_duration(video_id):
+    """Fetch video duration using YouTube API"""
+    url = f"https://www.googleapis.com/youtube/v3/videos?part=contentDetails&id={video_id}&key={API_KEY}"
     response = requests.get(url).json()
-    
-    try:
-        details = response["items"][0]
-        duration = details["contentDetails"]["duration"]
-        category_id = details["snippet"]["categoryId"]
-        
-        # Convert ISO 8601 duration to readable format
-        readable_duration = convert_duration(duration)
 
-        return readable_duration, category_id
+    try:
+        duration_iso = response["items"][0]["contentDetails"]["duration"]
+        duration_seconds = int(isodate.parse_duration(duration_iso).total_seconds())
+        return duration_seconds
     except (KeyError, IndexError):
-        return "Unknown", "Unknown"
-
-def convert_duration(duration):
-    """Convert ISO 8601 duration (PT5M30S) to human-readable format (5m 30s)"""
-    try:
-        parsed_duration = isodate.parse_duration(duration)
-        total_seconds = int(parsed_duration.total_seconds())
-
-        minutes, seconds = divmod(total_seconds, 60)
-        hours, minutes = divmod(minutes, 60)
-
-        if hours:
-            return f"{hours}h {minutes}m {seconds}s"
-        elif minutes:
-            return f"{minutes}m {seconds}s"
-        else:
-            return f"{seconds}s"
-    except:
         return "Unknown"
 
 def fetch_trending_videos():
     """Fetch trending YouTube videos and return as a list with additional data."""
-    url = f"https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics&chart=mostPopular&regionCode={REGION}&maxResults={MAX_RESULTS}&key={API_KEY}"
+    url = f"https://www.googleapis.com/youtube/v3/videos?part=snippet,statistics,contentDetails&chart=mostPopular&regionCode={REGION}&maxResults={MAX_RESULTS}&key={API_KEY}"
     response = requests.get(url).json()
 
     videos = []
@@ -73,6 +50,7 @@ def fetch_trending_videos():
 
         channel_id = snippet["channelId"]
         country, state = get_channel_location(channel_id)  # Fetch country & state
+        video_length = get_video_duration(video_id)  # Fetch video duration
 
         views = int(stats.get("viewCount", 0))
         likes = int(stats.get("likeCount", 0))
@@ -80,9 +58,6 @@ def fetch_trending_videos():
 
         # Engagement Rate Formula: (Likes + Comments) / Views
         engagement_rate = round((likes + comments) / views, 4) if views > 0 else 0
-
-        # Fetch video length and category
-        video_length, category_id = get_video_details(video_id)
 
         videos.append({
             "Trending_Date": datetime.now().strftime("%Y-%m-%d"),
@@ -93,10 +68,10 @@ def fetch_trending_videos():
             "Likes": likes,
             "Comments": comments,
             "Engagement_Rate": engagement_rate,
-            "Video_Length": video_length,
-            "Genre": category_id,  # Placeholder (categoryId needs mapping)
+            "Genre": snippet["categoryId"],  # Placeholder (categoryId needs mapping)
             "Country": country,
-            "State": state
+            "State": state,
+            "Video_Length_Seconds": video_length
         })
 
     return videos
@@ -116,5 +91,6 @@ def save_data():
 
 if __name__ == "__main__":
     save_data()
+
 
 
