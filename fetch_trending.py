@@ -6,7 +6,7 @@ from datetime import datetime
 import time
 
 # API Key should be stored securely (e.g., in environment variables)
-API_KEY = os.getenv("AIzaSyCbE9LwgnK_lGlMTpQpItxi58WCkhfwit4")
+API_KEY = "AIzaSyCbE9LwgnK_lGlMTpQpItxi58WCkhfwit4"
 if not API_KEY:
     raise ValueError("Missing API Key! Set YOUTUBE_API_KEY as an environment variable.")
 
