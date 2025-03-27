@@ -70,5 +70,3 @@ if __name__ == "__main__":
     analyze_trending_duration(df)
     analyze_genre_trending_duration(df)
     analyze_engagement_growth(df)
-
-
